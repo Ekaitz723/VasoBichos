@@ -1,7 +1,5 @@
 package com.vaso.bichos.ui.game
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -60,7 +58,11 @@ class GameDisplay(private val engine: Engine, private val scope: CoroutineScope)
     val players = engine.state.players.map { PlayerDisplay(it.moves, it.orbs) }
     val popups = mutableStateListOf<Popup>()
     val bursts = Channel<Burst>(Channel.UNLIMITED)
-    val shake = Animatable(0f)
+    /** Cada sacudida pedida sube [shakes]; la pantalla la anima con [shakeStrength]. */
+    var shakes by mutableIntStateOf(0)
+        private set
+    var shakeStrength = 0f
+        private set
     var banner by mutableStateOf<String?>(null)
     var busy by mutableStateOf(false)
         private set
@@ -209,10 +211,8 @@ class GameDisplay(private val engine: Engine, private val scope: CoroutineScope)
     }
 
     private fun kick(strength: Float) {
-        scope.launch {
-            shake.snapTo(strength)
-            shake.animateTo(0f, tween(260))
-        }
+        shakeStrength = strength
+        shakes++
     }
 
     private fun spriteAt(p: Pos) = sprites.firstOrNull { it.pos == p && !it.dying }

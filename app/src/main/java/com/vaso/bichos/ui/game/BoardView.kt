@@ -64,12 +64,19 @@ fun BoardView(
 ) {
     var selected by remember { mutableStateOf<Pos?>(null) }
     val swap by rememberUpdatedState(onSwap)
+    val shake = remember { Animatable(0f) }
+    LaunchedEffect(display.shakes) {
+        if (display.shakes > 0) {
+            shake.snapTo(display.shakeStrength)
+            shake.animateTo(0f, tween(260))
+        }
+    }
     if (!enabled && selected != null) selected = null
 
     BoxWithConstraints(
         modifier
             .aspectRatio(columns.toFloat() / rows)
-            .graphicsLayer { translationX = display.shake.value * sin(display.shake.value * 3f) }
+            .graphicsLayer { translationX = shake.value * sin(shake.value * 3f) }
             .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF0E0C18))
             .border(2.dp, Color(0xFF3A3360), RoundedCornerShape(14.dp)),

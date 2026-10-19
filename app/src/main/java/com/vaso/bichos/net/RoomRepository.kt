@@ -103,13 +103,18 @@ class RoomRepository(
     fun observeRoom(code: String): Flow<Room?> = callbackFlow {
         val ref = room(code)
         var meta: RoomMeta? = null
-        var players: List<RoomPlayer> = emptyList()
+        var metaLoaded = false
+        var players: List<RoomPlayer>? = null
+        // Solo se publica cuando han llegado las dos partes, para no ver una sala a medias.
         fun publish() {
-            trySend(meta?.let { Room(code, it, players) })
+            val loadedPlayers = players ?: return
+            if (!metaLoaded) return
+            trySend(meta?.let { Room(code, it, loadedPlayers) })
         }
         val metaListener = ref.child("meta").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(s: DataSnapshot) {
                 meta = if (s.exists()) parseMeta(s) else null
+                metaLoaded = true
                 publish()
             }
 

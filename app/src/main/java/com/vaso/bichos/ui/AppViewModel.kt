@@ -259,6 +259,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val byUid = r.players.associateBy { it.uid }
+        if (r.meta.order.any { it !in byUid }) return // aún no han llegado todos los jugadores
         val setups = r.meta.order.map { u ->
             val p = byUid.getValue(u)
             PlayerSetup(p.name, p.picks.map { ChampionPick(it.definitionId, StoneColor(it.color)) })
