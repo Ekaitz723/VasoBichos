@@ -1,17 +1,17 @@
 package com.vaso.bichos.engine.board
 
-import com.vaso.bichos.engine.core.GameState
-import com.vaso.bichos.engine.core.StoneColor
+import com.vaso.bichos.engine.core.GameContext
 
 /** Decide qué ficha nueva aparece en una casilla. */
 fun interface TileSpawner {
-    fun spawn(state: GameState, pos: Pos): Tile
+    fun spawn(ctx: GameContext, pos: Pos): Tile
 }
 
-/** Cada color pesa 1 y el orbe pesa [orbWeight]. */
-class WeightedSpawner(private val colorCount: Int, private val orbWeight: Int = 1) : TileSpawner {
-    override fun spawn(state: GameState, pos: Pos): Tile {
-        val roll = state.rng.nextInt(colorCount + orbWeight)
-        return if (roll < colorCount) Stone(StoneColor(roll)) else Orb
+/** Cada color del tablero pesa 1 y el orbe pesa [orbWeight]. */
+class WeightedSpawner(private val orbWeight: Int = 1) : TileSpawner {
+    override fun spawn(ctx: GameContext, pos: Pos): Tile {
+        val colors = ctx.boardColors()
+        val roll = ctx.rng.nextInt(colors.size + orbWeight)
+        return if (roll < colors.size) Stone(colors[roll]) else Orb
     }
 }

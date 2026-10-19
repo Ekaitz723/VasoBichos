@@ -27,6 +27,9 @@ object Q {
     /** ¿Se pasa el turno solo al quedarse sin movimientos? */
     data class AutoEndTurn(val player: PlayerId) : Query<Boolean>
 
+    /** Colores que pueden caer en el tablero. */
+    object BoardColors : Query<List<StoneColor>>
+
     object Spawner : Query<TileSpawner>
     object Finder : Query<MatchFinder>
 }

@@ -37,4 +37,5 @@ class GameContext internal constructor(private val engine: Engine) {
     fun movesPerTurn(player: PlayerId) = query(Q.MovesPerTurn(player), state.mode.baseMovesPerTurn)
     fun moveContainers(player: PlayerId) = query(Q.MoveContainers(player), state.mode.baseMoveContainers)
     fun orbCapacity(player: PlayerId) = query(Q.OrbCapacity(player), state.mode.baseOrbCapacity)
+    fun boardColors(): List<StoneColor> = query(Q.BoardColors, state.boardColors)
 }

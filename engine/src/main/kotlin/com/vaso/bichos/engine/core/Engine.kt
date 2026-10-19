@@ -30,6 +30,7 @@ class Engine(config: GameConfig, content: Content) {
             rng = Rng(config.seed),
             board = Board(mode.boardWidth, mode.boardHeight),
             players = config.players.mapIndexed { i, p -> PlayerState(PlayerId(i), p.name) },
+            boardColors = boardColors(config, mode),
         )
         state.elements += mode.createRules(state)
         config.players.forEachIndexed { i, setup ->
@@ -211,7 +212,7 @@ class Engine(config: GameConfig, content: Content) {
         for (p in board.positions) {
             var tries = 0
             do {
-                board[p] = spawner.spawn(state, p)
+                board[p] = spawner.spawn(ctx, p)
             } while (closesLine(board, p) && ++tries < MAX_FILL_TRIES)
         }
     }
@@ -222,7 +223,18 @@ class Engine(config: GameConfig, content: Content) {
         return same(1, 0) || same(0, 1)
     }
 
+    /** Los colores de los bichos siempre están; los extra, según la configuración. */
+    private fun boardColors(config: GameConfig, mode: GameMode): List<StoneColor> {
+        val all = (0 until mode.colorCount).map { StoneColor(it) }
+        val extras = config.extraColors ?: return all
+        val used = config.players.flatMap { p -> p.champions.map { it.color } }.toSet()
+        return all.filter { it in used || it in extras }
+    }
+
     private fun validate(config: GameConfig, mode: GameMode, content: Content) {
+        config.extraColors?.forEach {
+            require(it.index in 0 until mode.colorCount) { "Color ${it.index} no existe" }
+        }
         require(config.players.size in mode.playerCount) {
             "${mode.name} admite ${mode.playerCount} jugadores, no ${config.players.size}"
         }

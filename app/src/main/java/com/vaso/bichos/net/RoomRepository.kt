@@ -37,6 +37,8 @@ data class RoomMeta(
     val seed: Long,
     /** uids en orden de turno; solo existe al empezar. */
     val order: List<String>,
+    /** Colores extra elegidos por el anfitrión; null = todos. */
+    val extraColors: Set<Int>?,
 )
 
 data class Room(val code: String, val meta: RoomMeta, val players: List<RoomPlayer>)
@@ -51,6 +53,9 @@ class RoomRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
 ) {
     private fun room(code: String): DatabaseReference = db.getReference("rooms").child(code)
+
+    /** Al entrar, los bichos por defecto ya cuentan (para que se vean sus colores en la sala). */
+    var defaultPicks: String = ""
 
     suspend fun signIn(): String =
         auth.currentUser?.uid ?: auth.signInAnonymously().await().user!!.uid
@@ -75,7 +80,7 @@ class RoomRepository(
         if (me.get().await().exists()) return null // ya estaba: reconexión
         if (metaSnap.child("status").getValue(String::class.java) != STATUS_LOBBY) return "La partida ya ha empezado"
         me.setValue(
-            mapOf("name" to name, "joinedAt" to ServerValue.TIMESTAMP, "picks" to "", "ready" to false),
+            mapOf("name" to name, "joinedAt" to ServerValue.TIMESTAMP, "picks" to defaultPicks, "ready" to false),
         ).await()
         return null
     }
@@ -88,6 +93,10 @@ class RoomRepository(
         room(code).child("players").child(uid).updateChildren(
             mapOf("picks" to picks.joinToString(",") { "${it.definitionId}:${it.color}" }, "ready" to ready),
         ).await()
+    }
+
+    suspend fun setExtraColors(code: String, colors: Set<Int>) {
+        room(code).child("meta").child("extraColors").setValue(colors.sorted().joinToString(",")).await()
     }
 
     suspend fun startGame(code: String, order: List<String>, seed: Long) {
@@ -183,6 +192,8 @@ class RoomRepository(
         status = s.child("status").getValue(String::class.java).orEmpty(),
         seed = s.child("seed").getValue(Long::class.java) ?: 0L,
         order = s.child("order").getValue(String::class.java).orEmpty().split(",").filter { it.isNotEmpty() },
+        extraColors = s.child("extraColors").getValue(String::class.java)
+            ?.split(",")?.filter { it.isNotEmpty() }?.map { it.toInt() }?.toSet(),
     )
 
     private fun parsePlayer(s: DataSnapshot) = RoomPlayer(

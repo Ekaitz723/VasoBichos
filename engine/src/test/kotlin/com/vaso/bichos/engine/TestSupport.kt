@@ -28,13 +28,13 @@ val P1 = PlayerId(1)
 val P2 = PlayerId(2)
 
 /** Jugador 0: colores 0 y 1. Jugador 1: 2 y 3. Jugador 2: 4 y 5. El color 6 no es de nadie. */
-fun newGame(junkBoard: Boolean = true, seed: Long = 42): Engine {
+fun newGame(junkBoard: Boolean = true, seed: Long = 42, extraColors: Set<StoneColor>? = null): Engine {
     val mode = if (junkBoard) BasicMode.mode.copy(spawner = { _, _ -> Junk }) else BasicMode.mode
     val content = Content(listOf(mode), listOf(Vanilla.definition))
     val players = listOf(0 to 1, 2 to 3, 4 to 5).mapIndexed { i, (a, b) ->
         PlayerSetup("J$i", listOf(ChampionPick("vanilla", StoneColor(a)), ChampionPick("vanilla", StoneColor(b))))
     }
-    return Engine(GameConfig(BasicMode.ID, seed, players), content)
+    return Engine(GameConfig(BasicMode.ID, seed, players, extraColors), content)
 }
 
 fun Engine.put(vararg tiles: Pair<Pos, Tile>) {

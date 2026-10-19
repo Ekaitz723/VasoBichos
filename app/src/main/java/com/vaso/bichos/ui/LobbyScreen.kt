@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vaso.bichos.engine.content.Content
 import com.vaso.bichos.net.ChampionChoice
+import com.vaso.bichos.net.Room
 import com.vaso.bichos.ui.game.ColorGlyph
 import com.vaso.bichos.ui.game.StonePalette
 
@@ -94,6 +95,9 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
             ) { Text(if (me.ready) "Cambiar bichos" else "¡Listo!") }
         }
 
+        Spacer(Modifier.height(20.dp))
+        BoardColorsSection(vm, room, isHost)
+
         Spacer(Modifier.height(12.dp))
         if (isHost) {
             Button(
@@ -109,6 +113,61 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
             Text(if (isHost) "Cerrar sala" else "Salir de la sala")
         }
     }
+}
+
+@Composable
+private fun BoardColorsSection(vm: AppViewModel, room: Room, isHost: Boolean) {
+    val mode = Content.default.mode(room.meta.modeId)
+    val used = vm.usedColors(room)
+    val onBoard = vm.boardColors(room)
+    Text("Colores del tablero", style = MaterialTheme.typography.titleMedium)
+    Text(
+        (if (isHost) "Los de los bichos van siempre. Toca los demás para quitarlos o ponerlos." else "Los elige el anfitrión.") +
+            " Mínimo ${mode.minBoardColors}.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (color in 0 until mode.colorCount) {
+            val inUse = color in used
+            val present = color in onBoard
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .border(
+                            2.dp,
+                            when {
+                                inUse -> MaterialTheme.colorScheme.primary
+                                present -> MaterialTheme.colorScheme.outline
+                                else -> Color.Transparent
+                            },
+                            CircleShape,
+                        )
+                        .clickable(enabled = isHost && !inUse && !vm.working) { vm.toggleExtraColor(color) }
+                        .alpha(if (present) 1f else 0.2f)
+                        .padding(5.dp),
+                ) { ColorGlyph(color, Modifier.fillMaxSize()) }
+                Text(
+                    when {
+                        inUse -> "bicho"
+                        present -> "extra"
+                        else -> "—"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (inUse) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    Text(
+        "${onBoard.size} colores en el tablero",
+        style = MaterialTheme.typography.labelMedium,
+        color = if (onBoard.size < mode.minBoardColors) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+        modifier = Modifier.padding(top = 4.dp),
+    )
 }
 
 @Composable

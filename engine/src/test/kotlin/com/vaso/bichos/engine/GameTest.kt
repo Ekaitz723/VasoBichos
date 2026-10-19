@@ -215,6 +215,19 @@ class GameTest {
         assertEquals(stone(1), g.state.board[Pos(6, 0)])
     }
 
+    @Test fun onlyChampionColorsAndChosenExtrasFallOnTheBoard() {
+        // Bichos de colores 0-5; de extra solo el 6.
+        val g = newGame(junkBoard = false, seed = 9, extraColors = emptySet())
+        val allowed = (0..5).map { stone(it) }.toSet() + Orb
+        val rng = java.util.Random(3)
+        repeat(300) {
+            val p = g.state.turn.current
+            val a = Pos(rng.nextInt(6), rng.nextInt(5))
+            g.submit(Command.Swap(p, a, Pos(a.col + 1, a.row)))
+            assertTrue(g.state.board.positions.all { g.state.board[it] in allowed })
+        }
+    }
+
     @Test fun sameSeedAndCommandsGiveTheSameGame() {
         fun play(): List<Any?> {
             val g = newGame(junkBoard = false, seed = 7)

@@ -74,7 +74,7 @@ class Settle : Action {
                 write++
             }
             for (i in write until lane.size) {
-                val tile = spawner.spawn(state, lane[i])
+                val tile = spawner.spawn(ctx, lane[i])
                 board[lane[i]] = tile
                 spawned[lane[i]] = tile
             }
@@ -93,7 +93,7 @@ class Redraw : Action {
         ctx.emit(Events.TilesCleared(board.positions.filter { board[it] != null }))
         val tiles = linkedMapOf<Pos, Tile>()
         for (p in board.positions) {
-            val tile = spawner.spawn(state, p)
+            val tile = spawner.spawn(ctx, p)
             board[p] = tile
             tiles[p] = tile
         }

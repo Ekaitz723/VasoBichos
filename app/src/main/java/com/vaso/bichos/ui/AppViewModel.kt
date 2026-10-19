@@ -46,7 +46,12 @@ class GameSession(val config: GameConfig, val me: PlayerId?, val roomCode: Strin
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("vasobichos", Context.MODE_PRIVATE)
-    private val repo by lazy { RoomRepository() }
+    private val repo by lazy {
+        RoomRepository().apply {
+            val mode = Content.default.mode(BasicMode.ID)
+            defaultPicks = (0 until mode.championsPerPlayer).joinToString(",") { "vanilla:$it" }
+        }
+    }
 
     var screen by mutableStateOf<Screen>(Screen.Home)
         private set
@@ -206,6 +211,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val problem = when {
             r.players.size !in mode.playerCount -> "Hacen falta entre ${mode.playerCount.first} y ${mode.playerCount.last} jugadores"
             r.players.any { !it.ready } -> "Falta gente por darle a Listo"
+            boardColors(r).size < mode.minBoardColors -> "Hacen falta al menos ${mode.minBoardColors} colores en el tablero"
             else -> null
         }
         if (problem != null) {
@@ -213,6 +219,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         online { repo.startGame(r.code, r.players.map { it.uid }, Random.nextLong()) }
+    }
+
+    /** Colores que tendrá el tablero: los de los bichos elegidos más los extra. */
+    fun boardColors(r: Room): Set<Int> {
+        val mode = Content.default.mode(r.meta.modeId)
+        val used = usedColors(r)
+        val extras = r.meta.extraColors ?: (0 until mode.colorCount).toSet()
+        return used + extras
+    }
+
+    fun usedColors(r: Room): Set<Int> = r.players.flatMap { p -> p.picks.map { it.color } }.toSet()
+
+    fun toggleExtraColor(color: Int) {
+        val r = room ?: return
+        if (r.meta.hostUid != uid) return
+        val mode = Content.default.mode(r.meta.modeId)
+        val current = r.meta.extraColors ?: (0 until mode.colorCount).toSet()
+        val next = if (color in current) current - color else current + color
+        online { repo.setExtraColors(r.code, next) }
     }
 
     fun leaveLobby() {
@@ -264,7 +289,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val p = byUid.getValue(u)
             PlayerSetup(p.name, p.picks.map { ChampionPick(it.definitionId, StoneColor(it.color)) })
         }
-        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups), PlayerId(index), r.code)
+        val extras = r.meta.extraColors?.map { StoneColor(it) }?.toSet()
+        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups, extras), PlayerId(index), r.code)
         // Reconexión: se aplica todo lo que ya pasó sin animarlo.
         for (text in repo.loadCommands(r.code)) {
             s.applied++

@@ -23,10 +23,21 @@ data class GameMode(
     val matchFinder: MatchFinder,
     val baseCanSwap: (a: Pos, b: Pos, state: GameState) -> Boolean,
     val createRules: (state: GameState) -> List<GameElement>,
+    /** Mínimo de colores en el tablero que se recomienda al configurar la partida. */
+    val minBoardColors: Int = 4,
 )
 
 data class ChampionPick(val definitionId: String, val color: StoneColor)
 
 data class PlayerSetup(val name: String, val champions: List<ChampionPick>)
 
-data class GameConfig(val modeId: String, val seed: Long, val players: List<PlayerSetup>)
+data class GameConfig(
+    val modeId: String,
+    val seed: Long,
+    val players: List<PlayerSetup>,
+    /**
+     * Colores que caen en el tablero además de los de los bichos elegidos.
+     * null = todos los colores del modo.
+     */
+    val extraColors: Set<StoneColor>? = null,
+)

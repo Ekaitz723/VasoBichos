@@ -37,7 +37,7 @@ object BasicMode {
         baseMovesPerTurn = 2,
         baseMoveContainers = 2,
         baseOrbCapacity = 4,
-        spawner = WeightedSpawner(COLORS, orbWeight = 1),
+        spawner = WeightedSpawner(orbWeight = 1),
         matchFinder = StandardMatchFinder(),
         baseCanSwap = { a, b, _ -> a.isAdjacentTo(b) },
         createRules = { state ->

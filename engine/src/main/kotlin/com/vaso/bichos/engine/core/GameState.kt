@@ -33,6 +33,8 @@ class GameState(
     val rng: Rng,
     val board: Board,
     val players: List<PlayerState>,
+    /** Colores del tablero al empezar (los elementos pueden cambiarlos con [Q.BoardColors]). */
+    val boardColors: List<StoneColor>,
 ) {
     /** En el orden en que se les consulta y avisa. */
     val elements = mutableListOf<GameElement>()
