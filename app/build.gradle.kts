@@ -14,8 +14,8 @@ android {
         applicationId = "com.vaso.bichos"
         minSdk = 27
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

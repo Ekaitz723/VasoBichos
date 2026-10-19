@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -84,5 +85,9 @@ fun HomeScreen(vm: AppViewModel) {
             Text("Partida de prueba en este móvil (3 jugadores)")
         }
         if (vm.working) Text("Conectando…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+        val context = LocalContext.current
+        val version = remember { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+        Text("v$version", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
     }
 }
