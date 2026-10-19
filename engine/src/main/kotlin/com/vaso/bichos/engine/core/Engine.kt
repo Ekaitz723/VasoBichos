@@ -51,6 +51,17 @@ class Engine(config: GameConfig, content: Content) {
     fun options(player: PlayerId): List<GameOption> =
         if (state.isOver) emptyList() else state.elements.flatMap { it.options(player, ctx) }
 
+    /** null si el comando se aceptaría; si no, el motivo. No cambia nada. */
+    fun check(command: Command): String? = reject(command)
+
+    /** Lectura para la pantalla: valores ya modificados por todos los elementos. */
+    fun <T> read(query: Query<T>, base: T): T = query(query, base)
+    fun moveContainers(player: PlayerId) = ctx.moveContainers(player)
+    fun orbCapacity(player: PlayerId) = ctx.orbCapacity(player)
+    fun maxHp(champion: ElementId) = state.champion(champion)?.maxHp(ctx) ?: 0
+    fun abilityCost(champion: ElementId) = state.champion(champion)?.abilityCost(ctx) ?: 0
+    fun isTurnOf(player: PlayerId) = canAct(player)
+
     fun submit(command: Command): CommandResult {
         reject(command)?.let { return CommandResult.Rejected(it) }
         when (command) {
