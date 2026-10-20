@@ -232,6 +232,7 @@ private fun RivalColumns(vm: AppViewModel, enemies: List<PlayerId>, open: Player
             Column(
                 Modifier
                     .weight(1f)
+                    .turnAura(session.auras[enemy.index].takeIf { enemy == state.turn.current }, 14.dp)
                     .clip14()
                     .background(if (selected) Color(0xFF3A2A44) else Color(0xFF2A1E2E))
                     .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(14.dp))
@@ -240,7 +241,7 @@ private fun RivalColumns(vm: AppViewModel, enemies: List<PlayerId>, open: Player
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    (if (enemy == state.turn.current) "▶ " else "") + state.player(enemy).name,
+                    state.player(enemy).name,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -324,6 +325,7 @@ private fun PlayerSide(
     Column(
         modifier
             .fillMaxWidth()
+            .turnAura(session.auras[player.index].takeIf { player == engine.state.turn.current }, 14.dp)
             .clip14()
             .background(if (isEnemy) Color(0xFF2A1E2E) else Color(0xFF1C2238))
             .padding(10.dp),

@@ -30,6 +30,8 @@ data class RoomPlayer(
     val ready: Boolean,
     /** Bot de pruebas: lo mueve el móvil del anfitrión. */
     val bot: Boolean = false,
+    /** Brillo de su turno (ver `Aura`); null = el de su asiento. */
+    val aura: String? = null,
 )
 
 data class RoomMeta(
@@ -62,7 +64,7 @@ class RoomRepository(
     suspend fun signIn(): String =
         auth.currentUser?.uid ?: auth.signInAnonymously().await().user!!.uid
 
-    suspend fun createRoom(uid: String, name: String, modeId: String): String {
+    suspend fun createRoom(uid: String, name: String, modeId: String, aura: String? = null): String {
         var code: String
         do {
             code = (1..4).map { CODE_CHARS[Random.nextInt(CODE_CHARS.length)] }.joinToString("")
@@ -70,21 +72,25 @@ class RoomRepository(
         room(code).child("meta").setValue(
             mapOf("hostUid" to uid, "modeId" to modeId, "status" to STATUS_LOBBY, "seed" to 0L),
         ).await()
-        joinRoom(code, uid, name)
+        joinRoom(code, uid, name, aura)
         return code
     }
 
     /** Devuelve null si ha ido bien, o el motivo del fallo. */
-    suspend fun joinRoom(code: String, uid: String, name: String): String? {
+    suspend fun joinRoom(code: String, uid: String, name: String, aura: String? = null): String? {
         val metaSnap = room(code).child("meta").get().await()
         if (!metaSnap.exists()) return "No existe la sala $code"
         val me = room(code).child("players").child(uid)
         if (me.get().await().exists()) return null // ya estaba: reconexión
         if (metaSnap.child("status").getValue(String::class.java) != STATUS_LOBBY) return "La partida ya ha empezado"
-        me.setValue(
-            mapOf("name" to name, "joinedAt" to ServerValue.TIMESTAMP, "picks" to defaultPicks, "ready" to false),
-        ).await()
+        val data = mutableMapOf<String, Any>("name" to name, "joinedAt" to ServerValue.TIMESTAMP, "picks" to defaultPicks, "ready" to false)
+        if (aura != null) data["aura"] = aura
+        me.setValue(data).await()
         return null
+    }
+
+    suspend fun setAura(code: String, uid: String, aura: String) {
+        room(code).child("players").child(uid).child("aura").setValue(aura).await()
     }
 
     suspend fun leaveLobby(code: String, uid: String) {
@@ -220,6 +226,7 @@ class RoomRepository(
         },
         ready = s.child("ready").getValue(Boolean::class.java) ?: false,
         bot = s.child("bot").getValue(Boolean::class.java) ?: false,
+        aura = s.child("aura").getValue(String::class.java),
     )
 
     private fun key(index: Int) = String.format(Locale.ROOT, "%06d", index)

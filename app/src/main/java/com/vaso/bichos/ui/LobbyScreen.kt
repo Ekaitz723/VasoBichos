@@ -34,7 +34,14 @@ import androidx.compose.ui.unit.dp
 import com.vaso.bichos.engine.content.Content
 import com.vaso.bichos.net.ChampionChoice
 import com.vaso.bichos.net.Room
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import com.vaso.bichos.ui.game.Aura
+import com.vaso.bichos.ui.game.AuraPalette
 import com.vaso.bichos.ui.game.ColorGlyph
+import com.vaso.bichos.ui.game.turnAura
 import com.vaso.bichos.ui.game.StonePalette
 
 @Composable
@@ -55,8 +62,10 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
 
         Text("Jugadores (${room.players.size}/${mode.playerCount.last})", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
-        for (p in room.players) {
+        room.players.forEachIndexed { seat, p ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+                AuraSwatch(Aura.decode(p.aura) ?: Aura.default(seat), Modifier.size(12.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(
                     (if (p.uid == room.meta.hostUid) "★ " else "") + p.name + if (p.uid == vm.uid) " (tú)" else "",
                     modifier = Modifier.weight(1f),
@@ -109,6 +118,9 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !vm.working,
             ) { Text(if (me.ready) "Cambiar bichos" else "¡Listo!") }
+
+            Spacer(Modifier.height(20.dp))
+            AuraSection(vm, current = Aura.decode(me.aura) ?: Aura.default(room.players.indexOf(me)))
         }
 
         Spacer(Modifier.height(20.dp))
@@ -129,6 +141,52 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
             Text(if (isHost) "Cerrar sala" else "Salir de la sala")
         }
     }
+}
+
+/** El brillo que rodea tu recuadro cuando te toca. Lo ven todos. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AuraSection(vm: AppViewModel, current: Aura) {
+    Text("Tu brillo de turno", style = MaterialTheme.typography.titleMedium)
+    Text(
+        "Rodea tu recuadro cuando te toca. Por defecto, el color de tu sitio.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(10.dp))
+    val choices = AuraPalette.colors.indices.map { Aura.Solid(it) } + Aura.Gold + Aura.Rainbow
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        for (choice in choices) {
+            AuraSwatch(
+                choice,
+                Modifier
+                    .size(34.dp)
+                    .turnAura(choice.takeIf { it == current }, 17.dp)
+                    .clip(CircleShape)
+                    .clickable(enabled = !vm.working) { vm.chooseAura(choice) },
+            )
+        }
+    }
+    Text(
+        when (current) {
+            is Aura.Solid -> "Color que late"
+            Aura.Gold -> "Dorado con destello"
+            Aura.Rainbow -> "Arcoíris que gira"
+        },
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 6.dp),
+    )
+}
+
+@Composable
+private fun AuraSwatch(aura: Aura, modifier: Modifier) {
+    val brush = when (aura) {
+        is Aura.Solid -> SolidColor(AuraPalette.colors[aura.color])
+        Aura.Gold -> Brush.radialGradient(listOf(Color(0xFFFFF4D6), AuraPalette.gold, Color(0xFFB8862B)))
+        Aura.Rainbow -> Brush.sweepGradient(AuraPalette.rainbow + AuraPalette.rainbow.first())
+    }
+    Box(modifier.clip(CircleShape).background(brush))
 }
 
 @Composable

@@ -25,6 +25,7 @@ import com.vaso.bichos.net.ChampionChoice
 import com.vaso.bichos.net.CommandCodec
 import com.vaso.bichos.net.Room
 import com.vaso.bichos.net.RoomRepository
+import com.vaso.bichos.ui.game.Aura
 import com.vaso.bichos.ui.game.GameDisplay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -45,6 +46,8 @@ class GameSession(
     val roomCode: String?,
     /** Bots que mueve este móvil (solo el anfitrión). */
     val bots: Set<PlayerId> = emptySet(),
+    /** Brillo de turno de cada jugador, por índice. */
+    val auras: List<Aura> = List(config.players.size) { Aura.default(it) },
 ) {
     val engine = Engine(config, Content.default)
     var applied = 0
@@ -67,6 +70,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var playerName by mutableStateOf(prefs.getString(KEY_NAME, "").orEmpty())
         private set
     var lastRoom by mutableStateOf(prefs.getString(KEY_ROOM, null))
+        private set
+
+    /** Brillo de turno elegido en este móvil; null = el de su asiento. */
+    var aura by mutableStateOf(Aura.decode(prefs.getString(KEY_AURA, null)))
         private set
     var message by mutableStateOf<String?>(null)
     var working by mutableStateOf(false)
@@ -194,14 +201,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun createRoom() = online {
         val me = repo.signIn().also { uid = it }
-        val code = repo.createRoom(me, playerName, BasicMode.ID)
+        val code = repo.createRoom(me, playerName, BasicMode.ID, aura?.encode())
         enterLobby(code)
     }
 
     fun joinRoom(code: String) = online {
         val me = repo.signIn().also { uid = it }
         val clean = code.trim().uppercase()
-        val error = repo.joinRoom(clean, me, playerName)
+        val error = repo.joinRoom(clean, me, playerName, aura?.encode())
         if (error != null) {
             message = error
             if (clean == lastRoom) forgetRoom()
@@ -214,6 +221,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val code = room?.code ?: return
         val me = uid ?: return
         online { repo.setPicks(code, me, picks, ready) }
+    }
+
+    /** Se recuerda en el móvil para las próximas salas. */
+    fun chooseAura(choice: Aura) {
+        aura = choice
+        prefs.edit().putString(KEY_AURA, choice.encode()).apply()
+        val code = room?.code ?: return
+        val me = uid ?: return
+        online { repo.setAura(code, me, choice.encode()) }
     }
 
     fun startOnline() {
@@ -306,7 +322,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             emptySet()
         }
-        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups, extras), PlayerId(index), r.code, bots)
+        val auras = r.meta.order.mapIndexed { seat, u -> Aura.decode(byUid.getValue(u).aura) ?: Aura.default(seat) }
+        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups, extras), PlayerId(index), r.code, bots, auras)
         // Reconexión: se aplica todo lo que ya pasó sin animarlo.
         for (text in repo.loadCommands(r.code)) {
             s.applied++
@@ -391,6 +408,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val KEY_NAME = "name"
         const val KEY_ROOM = "room"
+        const val KEY_AURA = "aura"
         const val BOT_THINK_MS = 900L
     }
 }
