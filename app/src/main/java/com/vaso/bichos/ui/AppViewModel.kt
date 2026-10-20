@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaso.bichos.engine.board.Direction
+import com.vaso.bichos.engine.board.Pos
 import com.vaso.bichos.engine.content.Content
 import com.vaso.bichos.engine.content.basic.BasicMode
 import com.vaso.bichos.engine.core.ChampionPick
@@ -25,6 +27,7 @@ import com.vaso.bichos.net.Room
 import com.vaso.bichos.net.RoomRepository
 import com.vaso.bichos.ui.game.GameDisplay
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -36,7 +39,13 @@ sealed interface Screen {
 }
 
 /** Una partida en marcha. [me] null = modo prueba: este móvil controla a todos. */
-class GameSession(val config: GameConfig, val me: PlayerId?, val roomCode: String?) {
+class GameSession(
+    val config: GameConfig,
+    val me: PlayerId?,
+    val roomCode: String?,
+    /** Bots que mueve este móvil (solo el anfitrión). */
+    val bots: Set<PlayerId> = emptySet(),
+) {
     val engine = Engine(config, Content.default)
     var applied = 0
 
@@ -86,6 +95,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val batches = Channel<List<GameEvent>>(Channel.UNLIMITED)
     private var roomJob: Job? = null
     private var commandsJob: Job? = null
+    private var botJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -168,6 +178,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val s = session
         commandsJob?.cancel()
         roomJob?.cancel()
+        botJob?.cancel()
         val code = s?.roomCode
         if (code != null && s.engine.state.isOver) {
             if (room?.meta?.hostUid == uid) viewModelScope.launch { runCatching { repo.deleteRoom(code) } }
@@ -290,7 +301,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             PlayerSetup(p.name, p.picks.map { ChampionPick(it.definitionId, StoneColor(it.color)) })
         }
         val extras = r.meta.extraColors?.map { StoneColor(it) }?.toSet()
-        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups, extras), PlayerId(index), r.code)
+        val bots = if (r.meta.hostUid == me) {
+            r.meta.order.withIndex().filter { byUid.getValue(it.value).bot }.map { PlayerId(it.index) }.toSet()
+        } else {
+            emptySet()
+        }
+        val s = GameSession(GameConfig(r.meta.modeId, r.meta.seed, setups, extras), PlayerId(index), r.code, bots)
         // Reconexión: se aplica todo lo que ya pasó sin animarlo.
         for (text in repo.loadCommands(r.code)) {
             s.applied++
@@ -305,6 +321,52 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         commandsJob = viewModelScope.launch {
             repo.observeCommands(r.code, s.applied).collect { (i, text) -> apply(s, i, CommandCodec.decode(text)) }
         }
+        startBots(s)
+    }
+
+    // ---------- Bots de prueba (temporal) ----------
+
+    fun addBot() {
+        val r = room ?: return
+        val mode = Content.default.mode(r.meta.modeId)
+        val used = usedColors(r)
+        val free = (0 until mode.colorCount).filter { it !in used }
+        val colors = (free + (0 until mode.colorCount).filter { it !in free }).take(mode.championsPerPlayer)
+        val name = "Bot ${r.players.count { it.bot } + 1}"
+        online { repo.addBot(r.code, name, colors.map { ChampionChoice("vanilla", it) }) }
+    }
+
+    fun removeBot(botUid: String) {
+        val code = room?.code ?: return
+        online { repo.leaveLobby(code, botUid) }
+    }
+
+    /** Cuando le toca a un bot, hace un intercambio al azar (o elige la primera opción si le preguntan). */
+    private fun startBots(s: GameSession) {
+        if (s.bots.isEmpty()) return
+        botJob?.cancel()
+        botJob = viewModelScope.launch {
+            while (session === s && !s.engine.state.isOver) {
+                delay(BOT_THINK_MS)
+                if (queued > 0 || awaitingEcho) continue
+                botCommand(s)?.let { submit(it) }
+            }
+        }
+    }
+
+    private fun botCommand(s: GameSession): Command? {
+        val state = s.engine.state
+        state.pendingDecision?.let { d ->
+            return if (d.player in s.bots) Command.Answer(d.player, d.choices.first().key) else null
+        }
+        val player = state.turn.current
+        if (player !in s.bots || !s.engine.isTurnOf(player)) return null
+        repeat(100) {
+            val a = Pos(Random.nextInt(state.board.width), Random.nextInt(state.board.height))
+            val swap = Command.Swap(player, a, a + Direction.entries.random())
+            if (s.engine.check(swap) == null) return swap
+        }
+        return null
     }
 
     private fun forgetRoom() {
@@ -329,5 +391,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val KEY_NAME = "name"
         const val KEY_ROOM = "room"
+        const val BOT_THINK_MS = 900L
     }
 }

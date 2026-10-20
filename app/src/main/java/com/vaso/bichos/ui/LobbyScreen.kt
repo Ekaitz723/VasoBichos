@@ -63,12 +63,28 @@ fun LobbyScreen(vm: AppViewModel, code: String) {
                 )
                 for (pick in p.picks) ColorGlyph(pick.color, Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
+                if (p.bot && isHost) {
+                    Text(
+                        "Quitar",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.clickable { vm.removeBot(p.uid) }.padding(end = 8.dp),
+                    )
+                }
                 Text(
                     if (p.ready) "Listo" else "Eligiendo…",
                     color = if (p.ready) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
+        }
+
+        if (isHost) {
+            OutlinedButton(
+                onClick = vm::addBot,
+                enabled = !vm.working && room.players.size < mode.playerCount.last,
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            ) { Text("Añadir bot (pruebas)") }
         }
 
         if (me != null) {

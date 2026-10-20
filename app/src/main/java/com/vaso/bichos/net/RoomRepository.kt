@@ -28,6 +28,8 @@ data class RoomPlayer(
     val joinedAt: Long,
     val picks: List<ChampionChoice>,
     val ready: Boolean,
+    /** Bot de pruebas: lo mueve el móvil del anfitrión. */
+    val bot: Boolean = false,
 )
 
 data class RoomMeta(
@@ -87,6 +89,18 @@ class RoomRepository(
 
     suspend fun leaveLobby(code: String, uid: String) {
         room(code).child("players").child(uid).removeValue().await()
+    }
+
+    suspend fun addBot(code: String, name: String, picks: List<ChampionChoice>) {
+        room(code).child("players").child("bot-" + (1..6).map { CODE_CHARS[Random.nextInt(CODE_CHARS.length)] }.joinToString("")).setValue(
+            mapOf(
+                "name" to name,
+                "joinedAt" to ServerValue.TIMESTAMP,
+                "picks" to picks.joinToString(",") { "${it.definitionId}:${it.color}" },
+                "ready" to true,
+                "bot" to true,
+            ),
+        ).await()
     }
 
     suspend fun setPicks(code: String, uid: String, picks: List<ChampionChoice>, ready: Boolean) {
@@ -205,6 +219,7 @@ class RoomRepository(
             ChampionChoice(def, color.toInt())
         },
         ready = s.child("ready").getValue(Boolean::class.java) ?: false,
+        bot = s.child("bot").getValue(Boolean::class.java) ?: false,
     )
 
     private fun key(index: Int) = String.format(Locale.ROOT, "%06d", index)
