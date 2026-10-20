@@ -1,6 +1,13 @@
 package com.vaso.bichos.ui.game
 
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.composed
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -92,9 +99,10 @@ fun GameScreen(vm: AppViewModel) {
     val viewer = session.viewer()
     val current = state.turn.current
     val enemies = state.players.map { it.id }.filter { it != viewer }
-    var pickedEnemy by remember { mutableStateOf<PlayerId?>(null) }
-    LaunchedEffect(current) { pickedEnemy = null } // por defecto se ve al que está moviendo
-    val shownEnemy = pickedEnemy?.takeIf { it in enemies } ?: (if (current != viewer) current else enemies.first())
+    // Rival abierto en grande; null = todos en columnas pequeñas.
+    var expandedEnemy by remember { mutableStateOf<PlayerId?>(null) }
+    val openEnemy = expandedEnemy?.takeIf { it in enemies }
+    BackHandler(enabled = openEnemy != null) { expandedEnemy = null }
 
     var sheetFor by remember { mutableStateOf<ElementId?>(null) }
     val options = if (vm.queued == 0) engine.options(viewer) else emptyList()
@@ -110,29 +118,54 @@ fun GameScreen(vm: AppViewModel) {
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 10.dp)) {
             TopStrip(vm, viewer, current)
-            EnemyTabs(vm, enemies, shownEnemy, current) { pickedEnemy = it }
-            PlayerSide(vm, shownEnemy, isEnemy = true, onChampion = { sheetFor = it })
-            Box(Modifier.fillMaxWidth().weight(1f).heightIn(min = 36.dp), contentAlignment = Alignment.Center) {
-                BannerText(display.banner)
-            }
-            PlayerSide(vm, viewer, isEnemy = false, onChampion = { sheetFor = it })
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth().height(40.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                for (option in globalOptions) {
-                    Button(onClick = { vm.submit(Command.UseOption(viewer, option.source, option.key)) }, enabled = option.enabled && vm.canPlay()) {
-                        Text(option.label)
+            RivalColumns(vm, enemies, openEnemy) { expandedEnemy = if (it == openEnemy) null else it }
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth().weight(1f).heightIn(min = 36.dp), contentAlignment = Alignment.Center) {
+                        BannerText(display.banner)
+                    }
+                    PlayerSide(vm, viewer, isEnemy = false, onChampion = { sheetFor = it })
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth().height(40.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        for (option in globalOptions) {
+                            Button(onClick = { vm.submit(Command.UseOption(viewer, option.source, option.key)) }, enabled = option.enabled && vm.canPlay()) {
+                                Text(option.label)
+                            }
+                        }
+                        if (globalOptions.isEmpty()) HintText(vm, viewer)
+                    }
+                    BoardView(
+                        display = display,
+                        columns = state.board.width,
+                        rows = state.board.height,
+                        enabled = vm.canPlay(),
+                        onSwap = { a, b -> vm.submit(Command.Swap(viewer, a, b)) },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    )
+                }
+                // El rival en grande se despliega encima, pegado a las columnas. Tocar fuera lo cierra.
+                if (openEnemy != null) {
+                    Box(Modifier.fillMaxSize().background(Color(0x99000000)).noRippleClickable { expandedEnemy = null })
+                }
+                var lastOpen by remember { mutableStateOf(openEnemy) }
+                if (openEnemy != null) lastOpen = openEnemy
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = openEnemy != null,
+                    enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+                ) {
+                    lastOpen?.let { enemy ->
+                        PlayerSide(
+                            vm,
+                            enemy,
+                            isEnemy = true,
+                            onChampion = { sheetFor = it },
+                            onClose = { expandedEnemy = null },
+                            modifier = Modifier.padding(top = 2.dp).noRippleClickable {},
+                        )
                     }
                 }
-                if (globalOptions.isEmpty()) HintText(vm, viewer)
             }
-            BoardView(
-                display = display,
-                columns = state.board.width,
-                rows = state.board.height,
-                enabled = vm.canPlay(),
-                onSwap = { a, b -> vm.submit(Command.Swap(viewer, a, b)) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-            )
         }
 
         sheetFor?.let { id ->
@@ -185,37 +218,111 @@ private fun TopStrip(vm: AppViewModel, viewer: PlayerId, current: PlayerId) {
     }
 }
 
+/** Una columna pequeña por rival, todos a la vez. Al tocar una se abre en grande. */
 @Composable
-private fun EnemyTabs(vm: AppViewModel, enemies: List<PlayerId>, shown: PlayerId, current: PlayerId, onPick: (PlayerId) -> Unit) {
-    val state = vm.session?.engine?.state ?: return
+private fun RivalColumns(vm: AppViewModel, enemies: List<PlayerId>, open: PlayerId?, onPick: (PlayerId) -> Unit) {
+    val session = vm.session ?: return
+    val display = vm.display ?: return
+    val engine = session.engine
+    val state = engine.state
     Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (enemy in enemies) {
-            val selected = enemy == shown
-            val alive = state.championsOf(enemy).any { it.isAlive() }
-            Text(
-                (if (enemy == current) "▶ " else "") + state.player(enemy).name,
-                modifier = Modifier
+            val selected = enemy == open
+            val pd = display.players[enemy.index]
+            Column(
+                Modifier
+                    .weight(1f)
                     .clip14()
-                    .background(if (selected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)
-                    .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
+                    .background(if (selected) Color(0xFF3A2A44) else Color(0xFF2A1E2E))
+                    .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(14.dp))
                     .clickable { onPick(enemy) }
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                    .alpha(if (alive) 1f else 0.5f),
-                style = MaterialTheme.typography.labelMedium,
+                    .padding(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    (if (enemy == state.turn.current) "▶ " else "") + state.player(enemy).name,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                for (champion in state.championsOf(enemy)) MiniChampion(vm, champion)
+                MiniPips(pd.moves, engine.moveContainers(enemy), MaterialTheme.colorScheme.secondary, square = true)
+                MiniPips(pd.orbs, engine.orbCapacity(enemy), StonePalette.orbColor, square = false)
+            }
+        }
+    }
+}
+
+/** Un bicho en la columna pequeña: su forma, vida y carga. */
+@Composable
+private fun MiniChampion(vm: AppViewModel, champion: Champion) {
+    val display = vm.display ?: return
+    val engine = vm.session?.engine ?: return
+    val cd = display.champions.getValue(champion.id)
+    val maxHp = engine.maxHp(champion.id).coerceAtLeast(1)
+    val cost = engine.abilityCost(champion.id).coerceAtLeast(1)
+    val shake = rememberHitShake(cd.hits)
+    val hpFraction by animateFloatAsState(cd.hp.toFloat() / maxHp, tween(350), label = "hp")
+    Box {
+        Row(
+            Modifier.graphicsLayer { translationX = shake.value * 0.6f }.alpha(if (cd.alive) 1f else 0.4f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ColorGlyph(champion.color.index, Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Bar(hpFraction, if (hpFraction > 0.3f) HpGood else HpLow, Color(0xFF3A1F27), 5.dp)
+                Bar(cd.charge.toFloat() / cost, StonePalette.color(champion.color.index), Color(0xFF34304A), 3.dp)
+            }
+        }
+        for (popup in display.popups.filter { it.target == champion.id }) {
+            androidx.compose.runtime.key(popup.id) { FloatingText(popup, Modifier.align(Alignment.Center), small = true) }
+        }
+    }
+}
+
+@Composable
+private fun Bar(fraction: Float, color: Color, track: Color, height: Dp) {
+    Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(height / 2)).background(track)) {
+        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).background(color))
+    }
+}
+
+@Composable
+private fun MiniPips(filled: Int, total: Int, color: Color, square: Boolean) {
+    Row {
+        repeat(maxOf(total, filled)) { i ->
+            val shape = RoundedCornerShape(if (square) 1.5.dp else 1.dp)
+            Box(
+                Modifier
+                    .padding(end = 2.dp)
+                    .size(6.dp)
+                    .graphicsLayer { rotationZ = if (square) 0f else 45f }
+                    .clip(shape)
+                    .background(if (i < filled) color else Color.Transparent)
+                    .border(0.75.dp, color.copy(alpha = 0.6f), shape),
             )
         }
     }
 }
 
 @Composable
-private fun PlayerSide(vm: AppViewModel, player: PlayerId, isEnemy: Boolean, onChampion: (ElementId) -> Unit) {
+private fun PlayerSide(
+    vm: AppViewModel,
+    player: PlayerId,
+    isEnemy: Boolean,
+    onChampion: (ElementId) -> Unit,
+    onClose: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     val session = vm.session ?: return
     val display = vm.display ?: return
     val engine = session.engine
     val p = engine.state.player(player)
     val pd = display.players[player.index]
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip14()
             .background(if (isEnemy) Color(0xFF2A1E2E) else Color(0xFF1C2238))
@@ -231,6 +338,13 @@ private fun PlayerSide(vm: AppViewModel, player: PlayerId, isEnemy: Boolean, onC
             Pips("Mov", pd.moves, engine.moveContainers(player), MaterialTheme.colorScheme.secondary, square = true)
             Spacer(Modifier.width(10.dp))
             Pips("Orbes", pd.orbs, engine.orbCapacity(player), StonePalette.orbColor, square = false)
+            if (onClose != null) {
+                Text(
+                    "✕",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(6.dp)).clickable(onClick = onClose).padding(horizontal = 6.dp),
+                )
+            }
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -269,13 +383,7 @@ private fun ChampionCard(vm: AppViewModel, champion: Champion, modifier: Modifie
     val maxHp = engine.maxHp(champion.id).coerceAtLeast(1)
     val cost = engine.abilityCost(champion.id)
 
-    val shake = remember { Animatable(0f) }
-    LaunchedEffect(cd.hits) {
-        if (cd.hits > 0) {
-            shake.snapTo(10f)
-            shake.animateTo(0f, spring(dampingRatio = 0.2f, stiffness = Spring.StiffnessHigh))
-        }
-    }
+    val shake = rememberHitShake(cd.hits)
     val hpFraction by animateFloatAsState(cd.hp.toFloat() / maxHp, tween(350), label = "hp")
 
     Box(modifier) {
@@ -310,7 +418,7 @@ private fun ChampionCard(vm: AppViewModel, champion: Champion, modifier: Modifie
                     Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(hpFraction.coerceIn(0f, 1f))
-                        .background(if (hpFraction > 0.3f) Color(0xFF4CD964) else Color(0xFFFF5A5A)),
+                        .background(if (hpFraction > 0.3f) HpGood else HpLow),
                 )
             }
             Text("${cd.hp}/$maxHp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -334,7 +442,7 @@ private fun ChampionCard(vm: AppViewModel, champion: Champion, modifier: Modifie
 }
 
 @Composable
-private fun FloatingText(popup: Popup, modifier: Modifier) {
+private fun FloatingText(popup: Popup, modifier: Modifier, small: Boolean = false) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) { progress.animateTo(1f, tween(900)) }
     val color = when (popup.kind) {
@@ -346,7 +454,7 @@ private fun FloatingText(popup: Popup, modifier: Modifier) {
     Text(
         popup.text,
         color = color,
-        fontSize = 22.sp,
+        fontSize = if (small) 15.sp else 22.sp,
         fontWeight = FontWeight.Black,
         modifier = modifier.graphicsLayer {
             val p = progress.value
@@ -497,4 +605,24 @@ private fun ResultOverlay(vm: AppViewModel, result: GameResult) {
     }
 }
 
+/** La carta tiembla cada vez que [hits] cambia. */
+@Composable
+private fun rememberHitShake(hits: Int): Animatable<Float, *> {
+    val shake = remember { Animatable(0f) }
+    LaunchedEffect(hits) {
+        if (hits > 0) {
+            shake.snapTo(10f)
+            shake.animateTo(0f, spring(dampingRatio = 0.2f, stiffness = Spring.StiffnessHigh))
+        }
+    }
+    return shake
+}
+
+private val HpGood = Color(0xFF4CD964)
+private val HpLow = Color(0xFFFF5A5A)
+
 private fun Modifier.clip14() = this.clip(RoundedCornerShape(14.dp))
+
+private fun Modifier.noRippleClickable(onClick: () -> Unit) = composed {
+    clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+}
