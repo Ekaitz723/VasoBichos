@@ -265,7 +265,8 @@ private fun MiniChampion(vm: AppViewModel, champion: Champion) {
     val cost = engine.abilityCost(champion.id).coerceAtLeast(1)
     val shake = rememberHitShake(cd.hits)
     val hpFraction by animateFloatAsState(cd.hp.toFloat() / maxHp, tween(350), label = "hp")
-    Box {
+    // Altura fija: el número flotante sobresale sin estirar la columna.
+    Box(Modifier.height(16.dp)) {
         Row(
             Modifier.graphicsLayer { translationX = shake.value * 0.6f }.alpha(if (cd.alive) 1f else 0.4f),
             verticalAlignment = Alignment.CenterVertically,
