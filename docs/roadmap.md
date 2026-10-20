@@ -1,6 +1,6 @@
 # Hoja de ruta
 
-## Hecho (v0.5)
+## Hecho (v0.6)
 
 - Motor completo con el ciclo de resolución, turnos fantasma, Vainilla y Tablero base. 30 tests.
 - Pantallas: inicio, sala y partida, con menú RPG, preguntas, resultado y confeti.
@@ -9,24 +9,10 @@
 - Online con Firebase: salas por código, comandos en orden y reconexión.
 - Colores extra del tablero elegibles en la sala (v0.4).
 - Bots de prueba (v0.5, temporales).
+- Parte de arriba de la partida rediseñada (v0.6, rama `ui-rivales`): rivales en columnas
+  pequeñas que se abren en grande encima, y aura de turno elegible por jugador en la sala.
 - Arreglados: cierre al sacudir el tablero (animación fuera de la composición) y cierre al
   reconectar (la sala llegaba a medias).
-
-## Siguiente: rediseño de la parte superior de la partida
-
-Ya existe la rama `ui-rivales`, creada desde `main`. Hazlo ahí, en commits pequeños, para poder
-deshacerlo con git. Lo que pidió el usuario:
-
-- Se ven **todos los rivales a la vez**, aunque sea en pequeño: **una columna por jugador**
-  minimizada.
-- Al tocar uno, **se maximiza**, pero sigue en el lado de los enemigos.
-- Al tocar fuera o pulsar atrás, se vuelve a minimizar.
-- Dentro del rival maximizado se pueden ver sus cosas, tocar sus bichos, etc. (por lo que pueda
-  hacer falta en el futuro).
-- **Tus bichos siempre visibles.**
-- **El jugador al que le toca tiene su recuadro rodeado de un aura brillante.**
-
-Pensadlo juntos antes de programar: propón opciones y espera a que el usuario elija.
 
 ## Pendiente o por decidir
 

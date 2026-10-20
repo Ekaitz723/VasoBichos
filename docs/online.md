@@ -16,7 +16,8 @@
     order: "uid1,uid2,..."         orden de turnos (se escribe al empezar)
     extraColors: "2,5"             colores extra; si no existe = todos
   players/{uid}:
-    name, joinedAt (hora del servidor), picks: "vanilla:0,vanilla:1", ready, bot?
+    name, joinedAt (hora del servidor), picks: "vanilla:0,vanilla:1", ready, bot?,
+    aura? ("c3", "gold" o "rainbow"; solo estético, ver `Aura.kt`)
   commands/{000000}: "texto del comando"
 ```
 

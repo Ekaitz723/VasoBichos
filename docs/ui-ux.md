@@ -18,23 +18,29 @@
 
 - **Inicio** (`HomeScreen`): nombre, "Volver a la sala X" (reconexión), crear sala, unirse con
   código, partida de prueba en un solo móvil y la versión (`vX.Y`) abajo.
-- **Sala** (`LobbyScreen`): código grande; jugadores con sus colores y si están listos; elegir
-  bichos y colores; colores del tablero (los de bichos van siempre, los extra los decide el
+- **Sala** (`LobbyScreen`): código grande; jugadores con su aura, sus colores y si están listos;
+  elegir bichos y colores; tu brillo de turno; colores del tablero (los de bichos van siempre, los extra los decide el
   anfitrión); "Añadir bot (pruebas)"; empezar (solo el anfitrión) o salir.
 - **Partida** (`GameScreen`), de arriba abajo:
   1. Franja superior: sala o "MODO PRUEBA", de quién es el turno, salir.
-  2. Pestañas de rivales y el panel del rival elegido. Por defecto se ve al que está moviendo.
+  2. **Una columna pequeña por rival**, todos a la vez: nombre, cada bicho (forma, barra de vida y
+     de carga) y movimientos y orbes en puntitos. Al tocar una, su panel grande (como el tuyo, con
+     sus cartas tocables) se despliega **encima**, pegado a las columnas y con el resto oscurecido:
+     el tablero no se mueve. Tocar otra columna cambia de rival; tocar fuera, la ✕ o atrás lo
+     cierra.
   3. Hueco central para avisos grandes (banner) o "VS".
   4. Tu panel: nombre, movimientos (cuadrados = contenedores, rellenos = movimientos), orbes
      (rombos = capacidad) y tus cartas de bicho.
   5. Botones globales (por ejemplo "¿Redraw?") o una pista de qué hacer.
   6. El tablero, abajo, al alcance del pulgar.
+- **Aura de turno** (`Aura.kt`, `Modifier.turnAura`): el recuadro de quien mueve (tu panel o la
+  columna del rival) se rodea de un halo animado. Cada jugador elige el suyo en la sala ("Tu brillo
+  de turno"): un color que late (por defecto, el de su sitio en la sala), dorado con destello o
+  arcoíris que gira. Viaja con la sala, no con la partida, y se recuerda en el móvil.
 - **Carta de bicho**: forma y color, nombre, fase (F2), barra de vida, barra de carga en
   segmentos (uno por punto de coste) y KO si está muerto. Al tocarla se abre un panel inferior con
   su ficha y sus ACCIONES en estilo RPG ("▶ Nombre" y una descripción; en gris si no se pueden usar).
 - **Resultado**: capa oscura, "¡Gana X!" o "Empate", confeti (Konfetti) y volver al inicio.
-
-> El usuario quiere rediseñar la parte de arriba de la partida: ver `docs/roadmap.md`.
 
 ## Controles
 
