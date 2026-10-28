@@ -7,24 +7,24 @@
     "members": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && root.child('secret/key').exists() && newData.val() === root.child('secret/key').val()"
+        ".write": "auth != null && auth.uid === $uid && root.child('secret').exists() && newData.val() === root.child('secret').val()"
       }
     },
     "rooms": {
       "$code": {
-        ".read": "auth != null && root.child('secret/key').exists() && root.child('members/' + auth.uid).val() === root.child('secret/key').val()",
-        ".write": "auth != null && root.child('secret/key').exists() && root.child('members/' + auth.uid).val() === root.child('secret/key').val() && !newData.exists() && data.child('meta/hostUid').val() === auth.uid",
+        ".read": "auth != null && root.child('secret').exists() && root.child('members/' + auth.uid).val() === root.child('secret').val()",
+        ".write": "auth != null && root.child('secret').exists() && root.child('members/' + auth.uid).val() === root.child('secret').val() && !newData.exists() && data.child('meta/hostUid').val() === auth.uid",
         "meta": {
-          ".write": "auth != null && root.child('secret/key').exists() && root.child('members/' + auth.uid).val() === root.child('secret/key').val() && (data.exists() ? data.child('hostUid').val() === auth.uid : newData.child('hostUid').val() === auth.uid)"
+          ".write": "auth != null && root.child('secret').exists() && root.child('members/' + auth.uid).val() === root.child('secret').val() && (data.exists() ? data.child('hostUid').val() === auth.uid : newData.child('hostUid').val() === auth.uid)"
         },
         "players": {
           "$uid": {
-            ".write": "auth != null && root.child('secret/key').exists() && root.child('members/' + auth.uid).val() === root.child('secret/key').val() && ($uid === auth.uid || data.parent().parent().child('meta/hostUid').val() === auth.uid)"
+            ".write": "auth != null && root.child('secret').exists() && root.child('members/' + auth.uid).val() === root.child('secret').val() && ($uid === auth.uid || data.parent().parent().child('meta/hostUid').val() === auth.uid)"
           }
         },
         "commands": {
           "$index": {
-            ".write": "auth != null && root.child('secret/key').exists() && root.child('members/' + auth.uid).val() === root.child('secret/key').val() && !data.exists() && data.parent().parent().child('players/' + auth.uid).exists()",
+            ".write": "auth != null && root.child('secret').exists() && root.child('members/' + auth.uid).val() === root.child('secret').val() && !data.exists() && data.parent().parent().child('players/' + auth.uid).exists()",
             ".validate": "newData.isString() && newData.val().length < 200 && $index.matches(/^[0-9]{6}$/)"
           }
         }

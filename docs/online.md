@@ -11,7 +11,7 @@
   gstatic). Android y web juegan en las mismas salas.
 - Reglas de la base de datos: `database.rules.json` (se pegan a mano en la consola de Firebase,
   pestaña Reglas; el archivo es la copia de referencia). Resumen:
-  - **Contraseña de grupo.** Vive en `/secret/key`, que nadie puede leer; se cambia a mano en la
+  - **Contraseña de grupo.** Vive en `/secret`, que nadie puede leer; se cambia a mano en la
     consola. La app escribe `/members/{uid} = contraseña` y la regla solo lo acepta si coincide.
     Solo quien tiene en `members` la contraseña *actual* puede leer o escribir salas: si se
     cambia, a todos se les vuelve a pedir.
@@ -24,7 +24,7 @@
 ## Estructura
 
 ```
-/secret/key                        contraseña del grupo (ilegible)
+/secret                        contraseña del grupo (ilegible)
 /members/{uid}                     contraseña con la que entró
 /rooms/{CÓDIGO}                    4 letras
   meta:
