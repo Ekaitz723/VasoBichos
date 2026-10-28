@@ -19,16 +19,16 @@ import kotlin.js.Promise
 
 /** [RealtimeDb] con el SDK de Firebase para JavaScript (ver `firebase-bridge.js`). */
 class JsRealtimeDb : RealtimeDb {
-    override suspend fun signIn(): String = jsSignIn().await<JsString>().toString()
+    override suspend fun signIn(): String = jsSignIn().awaitDb<JsString>().toString()
 
-    override suspend fun get(path: String): Any? = fromJson(jsGet(path).await<JsString>().toString())
+    override suspend fun get(path: String): Any? = fromJson(jsGet(path).awaitDb<JsString>().toString())
 
     override suspend fun set(path: String, value: Any?) {
-        jsSet(path, toJson(value).toString()).await<JsAny?>()
+        jsSet(path, toJson(value).toString()).awaitDb<JsAny?>()
     }
 
     override suspend fun update(path: String, values: Map<String, Any?>) {
-        jsUpdate(path, toJson(values).toString()).await<JsAny?>()
+        jsUpdate(path, toJson(values).toString()).awaitDb<JsAny?>()
     }
 
     override fun observe(path: String): Flow<Any?> = callbackFlow {
@@ -51,7 +51,7 @@ class JsRealtimeDb : RealtimeDb {
     }
 
     override suspend fun setIfEmpty(path: String, value: String): Boolean =
-        jsSetIfEmpty(path, value).await<JsBoolean>().toBoolean()
+        jsSetIfEmpty(path, value).awaitDb<JsBoolean>().toBoolean()
 }
 
 private fun fromJson(text: String): Any? = Json.parseToJsonElement(text).toValue()
@@ -99,3 +99,14 @@ private fun jsObserveChildren(
 private fun jsStop(handle: Int): Unit = js("window.vbDb.stop(handle)")
 
 private fun jsSetIfEmpty(path: String, value: String): Promise<JsBoolean> = js("window.vbDb.setIfEmpty(path, value)")
+
+/**
+ * Espera la promesa y convierte el error de JavaScript (que en Wasm no es una `Exception`) en una
+ * normal, para que el código común lo capture igual que en Android.
+ */
+private suspend fun <T : JsAny?> Promise<T>.awaitDb(): T =
+    try {
+        await<T>()
+    } catch (e: JsException) {
+        throw IllegalStateException(e.message, e)
+    }
