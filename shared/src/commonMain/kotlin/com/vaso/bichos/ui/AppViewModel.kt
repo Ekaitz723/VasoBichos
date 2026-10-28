@@ -199,14 +199,39 @@ class AppViewModel(platform: Platform) : ViewModel() {
 
     // ---------- Salas ----------
 
-    fun createRoom() = online {
+    /** Contraseña del grupo guardada; sin ella no se puede jugar online. */
+    var groupPassword by mutableStateOf(prefs.get(KEY_GROUP))
+        private set
+    private var inGroup = false
+
+    fun enterGroup(password: String) = online {
+        groupPassword = password.trim()
+        signInToGroup()
+    }
+
+    /** Inicia sesión y se apunta al grupo (una vez por arranque: si cambia la contraseña, la vuelve a pedir). */
+    private suspend fun signInToGroup(): String {
         val me = repo.signIn().also { uid = it }
+        if (inGroup) return me
+        val password = groupPassword ?: throw UserMessage("Falta la contraseña del grupo")
+        if (!repo.joinGroup(me, password)) {
+            groupPassword = null
+            prefs.put(KEY_GROUP, null)
+            throw UserMessage("Contraseña incorrecta")
+        }
+        prefs.put(KEY_GROUP, password)
+        inGroup = true
+        return me
+    }
+
+    fun createRoom() = online {
+        val me = signInToGroup()
         val code = repo.createRoom(me, playerName, BasicMode.ID, aura?.encode())
         enterLobby(code)
     }
 
     fun joinRoom(code: String) = online {
-        val me = repo.signIn().also { uid = it }
+        val me = signInToGroup()
         val clean = code.trim().uppercase()
         val error = repo.joinRoom(clean, me, playerName, aura?.encode())
         if (error != null) {
@@ -398,7 +423,7 @@ class AppViewModel(platform: Platform) : ViewModel() {
             try {
                 block()
             } catch (e: Exception) {
-                message = "Error de conexión: ${e.message}"
+                message = if (e is UserMessage) e.message else "Error de conexión: ${e.message}"
             } finally {
                 working = false
             }
@@ -409,6 +434,10 @@ class AppViewModel(platform: Platform) : ViewModel() {
         const val KEY_NAME = "name"
         const val KEY_ROOM = "room"
         const val KEY_AURA = "aura"
+        const val KEY_GROUP = "group"
         const val BOT_THINK_MS = 900L
     }
 }
+
+/** Error que se enseña tal cual, sin "Error de conexión". */
+private class UserMessage(text: String) : Exception(text)

@@ -14,6 +14,8 @@
 - Versión web para jugar desde iPhone (rama `web`): motor y pantallas multiplataforma
   (`:shared`), Firebase por su SDK de JavaScript, confeti propio y publicación automática en
   GitHub Pages.
+- Contraseña de grupo (v0.7, rama `grupo`): sin ella no se ve ni se toca ninguna sala. Reglas
+  de Firebase en `database.rules.json`.
 - Arreglados: cierre al sacudir el tablero (animación fuera de la composición) y cierre al
   reconectar (la sala llegaba a medias).
 

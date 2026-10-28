@@ -45,6 +45,19 @@ class RoomRepository(private val db: RealtimeDb) {
 
     suspend fun signIn(): String = db.signIn()
 
+    /**
+     * Se apunta al grupo con la contraseña. Las reglas de Firebase solo aceptan la escritura si
+     * coincide con `/secret/key` (que nadie puede leer), y sin estar apuntado no se ve ninguna sala.
+     * Devuelve false si la contraseña es incorrecta.
+     */
+    suspend fun joinGroup(uid: String, password: String): Boolean =
+        try {
+            db.set("members/$uid", password)
+            true
+        } catch (e: Exception) {
+            if (e.message.orEmpty().contains("ermission")) false else throw e
+        }
+
     suspend fun createRoom(uid: String, name: String, modeId: String, aura: String? = null): String {
         var code: String
         do {

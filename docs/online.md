@@ -9,12 +9,23 @@
   pública. Lo que protege los datos son las reglas.
 - La web habla con Firebase con su SDK de JavaScript (`firebase-bridge.js`, cargado desde
   gstatic). Android y web juegan en las mismas salas.
-- Reglas de la base de datos: exigen estar identificado (`auth != null`).
+- Reglas de la base de datos: `database.rules.json` (se pegan a mano en la consola de Firebase,
+  pestaña Reglas; el archivo es la copia de referencia). Resumen:
+  - **Contraseña de grupo.** Vive en `/secret/key`, que nadie puede leer; se cambia a mano en la
+    consola. La app escribe `/members/{uid} = contraseña` y la regla solo lo acepta si coincide.
+    Solo quien tiene en `members` la contraseña *actual* puede leer o escribir salas: si se
+    cambia, a todos se les vuelve a pedir.
+  - La app la pide una vez y la guarda (clave `group`); al arrancar la vuelve a mandar.
+  - No se puede listar `/rooms`: hay que saber el código.
+  - `meta` y borrar la sala: solo el anfitrión. `players/{uid}`: uno mismo o el anfitrión (bots).
+  - `commands`: solo jugadores de la sala, solo añadir (nunca reescribir), texto corto.
 - Gratis (plan Spark) de sobra: una partida ocupa unos KB y se borra al terminar.
 
 ## Estructura
 
 ```
+/secret/key                        contraseña del grupo (ilegible)
+/members/{uid}                     contraseña con la que entró
 /rooms/{CÓDIGO}                    4 letras
   meta:
     hostUid, modeId, status ("lobby" | "playing"), seed (Long)

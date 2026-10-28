@@ -26,12 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.vaso.bichos.ui.game.ColorGlyph
 
 @Composable
 fun HomeScreen(vm: AppViewModel) {
-    var code by remember { mutableStateOf("") }
     val hasName = vm.playerName.isNotBlank()
     Column(
         Modifier.fillMaxSize().padding(24.dp),
@@ -54,6 +55,43 @@ fun HomeScreen(vm: AppViewModel) {
         )
         Spacer(Modifier.height(16.dp))
 
+        if (vm.groupPassword == null) {
+            // Solo la primera vez (o si cambia): luego queda guardada en el móvil.
+            var password by remember { mutableStateOf("") }
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Contraseña del grupo") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { vm.enterGroup(password) },
+                enabled = password.isNotBlank() && !vm.working,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Entrar")
+            }
+        } else {
+            OnlineButtons(vm, hasName)
+        }
+        Spacer(Modifier.height(28.dp))
+        TextButton(onClick = vm::startLocal) {
+            Text("Partida de prueba en este móvil (3 jugadores)")
+        }
+        if (vm.working) Text("Conectando…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+        Text("v${vm.appVersion}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+@Composable
+private fun OnlineButtons(vm: AppViewModel, hasName: Boolean) {
+    var code by remember { mutableStateOf("") }
+    Column(Modifier.fillMaxWidth()) {
         vm.lastRoom?.let { last ->
             Button(onClick = { vm.joinRoom(last) }, enabled = hasName && !vm.working, modifier = Modifier.fillMaxWidth()) {
                 Text("Volver a la sala $last")
@@ -79,12 +117,5 @@ fun HomeScreen(vm: AppViewModel) {
                 Text("Unirse")
             }
         }
-        Spacer(Modifier.height(28.dp))
-        TextButton(onClick = vm::startLocal) {
-            Text("Partida de prueba en este móvil (3 jugadores)")
-        }
-        if (vm.working) Text("Conectando…", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(16.dp))
-        Text("v${vm.appVersion}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
     }
 }
