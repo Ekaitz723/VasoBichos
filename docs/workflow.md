@@ -22,14 +22,16 @@
 
 ## Tests
 
-- `./gradlew :engine:test` (JUnit 4). `TestSupport.kt` tiene `newGame()` (3 jugadores; colores
+- `./gradlew :engine:allTests` (`kotlin.test`; corre en JVM y en Wasm con Node). Solo JVM, más
+  rápido: `:engine:jvmTest`. `TestSupport.kt` tiene `newGame()` (3 jugadores; colores
   0-1, 2-3 y 4-5; el 6 no es de nadie), un tablero de relleno `Junk` que nunca combina, `put()`
   para colocar fichas y helpers como `swapOk`, `junkSwap` y `useOk`.
 - Hay un test de partida aleatoria larga (2000 jugadas) y otro de determinismo. Mantenlos pasando.
 
 ## Emulador
 
-- SDK en `%LOCALAPPDATA%/Android/Sdk`. Hay dos AVD: `Pixel_7` (el que se usa) y `Pixel_Tablet`.
+- SDK en `%LOCALAPPDATA%/Android/Sdk`. Hay un AVD: `Pixel_7`. (El `Pixel_Tablet` se
+  borró para liberar disco: el disco C: del portátil va justo, no instales imágenes de más.)
 - El usuario lo abre desde **Device Manager de Android Studio**, para que salga en
   *Running Devices*. Si lo lanzas tú por línea de comandos sale en una ventana aparte y él no lo ve
   dentro de Studio.

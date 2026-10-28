@@ -1,5 +1,7 @@
 package com.vaso.bichos.engine.core
 
+import kotlin.jvm.JvmInline
+
 @JvmInline
 value class PlayerId(val index: Int)
 

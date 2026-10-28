@@ -1,13 +1,14 @@
 package com.vaso.bichos.engine.board
 
 import com.vaso.bichos.engine.core.StoneColor
+import kotlin.math.abs
 
 /** Fila 0 = arriba, columna 0 = izquierda. */
 data class Pos(val col: Int, val row: Int) {
     operator fun plus(d: Direction) = Pos(col + d.dCol, row + d.dRow)
 
     fun isAdjacentTo(other: Pos): Boolean =
-        Math.abs(col - other.col) + Math.abs(row - other.row) == 1
+        abs(col - other.col) + abs(row - other.row) == 1
 }
 
 enum class Direction(val dCol: Int, val dRow: Int) {

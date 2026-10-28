@@ -46,7 +46,7 @@ ese documento en el mismo commit. Solo lo que haya cambiado de verdad; no los re
 ## Comandos rápidos
 
 ```
-./gradlew :engine:test            # tests del motor
+./gradlew :engine:allTests        # tests del motor (JVM y Wasm)
 ./gradlew :app:assembleDebug      # APK en app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:installDebug       # instalar en el dispositivo/emulador conectado
 ```

@@ -14,7 +14,7 @@ import com.vaso.bichos.engine.core.GameConfig
 import com.vaso.bichos.engine.core.PlayerId
 import com.vaso.bichos.engine.core.PlayerSetup
 import com.vaso.bichos.engine.core.StoneColor
-import org.junit.Assert.assertTrue
+import kotlin.test.assertTrue
 
 /** Ficha de relleno que nunca combina: así los tests controlan exactamente qué pasa. */
 object Junk : Tile {
@@ -45,7 +45,7 @@ fun Engine.vanilla(color: Int): Vanilla = state.champions().first { it.color.ind
 
 fun Engine.swapOk(player: PlayerId, a: Pos, b: Pos) {
     val result = submit(Command.Swap(player, a, b))
-    assertTrue("Swap rechazado: $result", result is CommandResult.Accepted)
+    assertTrue(result is CommandResult.Accepted, "Swap rechazado: $result")
 }
 
 /** Un intercambio de relleno que no combina nada (fila superior). */
@@ -53,5 +53,5 @@ fun Engine.junkSwap(player: PlayerId) = swapOk(player, Pos(5, 0), Pos(6, 0))
 
 fun Engine.useOk(player: PlayerId, color: Int, key: String) {
     val result = submit(Command.UseOption(player, vanilla(color).id, key))
-    assertTrue("Opción rechazada: $result", result is CommandResult.Accepted)
+    assertTrue(result is CommandResult.Accepted, "Opción rechazada: $result")
 }

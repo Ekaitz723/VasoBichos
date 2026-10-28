@@ -15,12 +15,12 @@ import com.vaso.bichos.engine.core.GameElement
 import com.vaso.bichos.engine.core.GameEvent
 import com.vaso.bichos.engine.core.GameResult
 import com.vaso.bichos.engine.core.Revive
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class GameTest {
 
@@ -219,7 +219,7 @@ class GameTest {
         // Bichos de colores 0-5; de extra solo el 6.
         val g = newGame(junkBoard = false, seed = 9, extraColors = emptySet())
         val allowed = (0..5).map { stone(it) }.toSet() + Orb
-        val rng = java.util.Random(3)
+        val rng = kotlin.random.Random(3)
         repeat(300) {
             val p = g.state.turn.current
             val a = Pos(rng.nextInt(6), rng.nextInt(5))
@@ -242,7 +242,7 @@ class GameTest {
 
     @Test fun longRandomGameNeverBreaks() {
         val g = newGame(junkBoard = false, seed = 123)
-        val rng = java.util.Random(1)
+        val rng = kotlin.random.Random(1)
         repeat(2000) {
             if (g.state.isOver) return
             val p = g.state.turn.current

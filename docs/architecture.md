@@ -2,12 +2,14 @@
 
 ## Módulos
 
-- **`:engine`**: Kotlin puro (JVM 11), sin Android. Contiene todas las reglas y el contenido
-  (bichos, tableros). Tiene tests JUnit en `engine/src/test`.
+- **`:engine`**: Kotlin Multiplatform puro (destinos JVM 11 y Wasm para la web), sin Android.
+  Contiene todas las reglas y el contenido (bichos, tableros). Todo va en `commonMain`: nada de
+  `java.*` ni APIs de una sola plataforma. Tests con `kotlin.test` en `engine/src/commonTest`,
+  que corren en JVM y en Wasm (así se comprueba que la partida sale igual en los dos).
 - **`:app`**: Android + Compose. Pantallas, animación y red (Firebase). Depende de `:engine`.
 
 ```
-engine/src/main/kotlin/com/vaso/bichos/engine/
+engine/src/commonMain/kotlin/com/vaso/bichos/engine/
   core/       Engine, GameState, GameContext, Element, Query, Action(s), Events, Decision,
               Commands, GameMode/GameConfig, Rng, Ids
   board/      Board, Pos, Direction, Tile/Stone/Orb, MatchFinder, TileSpawner

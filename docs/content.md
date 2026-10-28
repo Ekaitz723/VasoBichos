@@ -71,5 +71,5 @@ class MiBicho(setup: ChampionSetup) : Champion(setup, definition, baseMaxHp = 40
 }
 ```
 
-Después: añadirlo a `Content.default` y escribir tests en `engine/src/test` (ver `GameTest` y
+Después: añadirlo a `Content.default` y escribir tests en `engine/src/commonTest` (ver `GameTest` y
 `TestSupport`: tablero de relleno `Junk` para controlar exactamente qué combina).

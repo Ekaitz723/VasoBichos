@@ -3,8 +3,8 @@ package com.vaso.bichos.engine
 import com.vaso.bichos.engine.board.Board
 import com.vaso.bichos.engine.board.Pos
 import com.vaso.bichos.engine.board.StandardMatchFinder
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class MatchFinderTest {
     private fun board(vararg rows: String): Board {
