@@ -78,3 +78,5 @@
   usa el que baja Gradle en `~/.gradle/nodejs/`.
 - Kotlin va en 2.4.x porque Compose Multiplatform para web lo exige; si subes Compose, puede que
   haya que subir Kotlin.
+- En ordenador (más de 600 de ancho) la app va en una columna con forma de móvil, centrada
+  (`PhoneFrame` en `Main.kt` de wasm). En móvil no cambia nada.
