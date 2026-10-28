@@ -1,7 +1,5 @@
 package com.vaso.bichos.ui.game
 
-import android.view.HapticFeedbackConstants
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -56,8 +54,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,11 +66,6 @@ import com.vaso.bichos.engine.core.GameOption
 import com.vaso.bichos.engine.core.GameResult
 import com.vaso.bichos.engine.core.PlayerId
 import com.vaso.bichos.ui.AppViewModel
-import nl.dionsegijn.konfetti.compose.KonfettiView
-import nl.dionsegijn.konfetti.core.Party
-import nl.dionsegijn.konfetti.core.Position
-import nl.dionsegijn.konfetti.core.emitter.Emitter
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,16 +76,7 @@ fun GameScreen(vm: AppViewModel) {
     val state = engine.state
     vm.version // recomponer cuando cambia el motor
 
-    val view = LocalView.current
-    display.haptic = { kind ->
-        view.performHapticFeedback(
-            when (kind) {
-                HapticKind.TICK -> HapticFeedbackConstants.CLOCK_TICK
-                HapticKind.POP -> HapticFeedbackConstants.KEYBOARD_TAP
-                HapticKind.HEAVY -> HapticFeedbackConstants.LONG_PRESS
-            },
-        )
-    }
+    display.haptic = rememberHaptics()
 
     val viewer = session.viewer()
     val current = state.turn.current
@@ -102,7 +84,7 @@ fun GameScreen(vm: AppViewModel) {
     // Rival abierto en grande; null = todos en columnas pequeñas.
     var expandedEnemy by remember { mutableStateOf<PlayerId?>(null) }
     val openEnemy = expandedEnemy?.takeIf { it in enemies }
-    BackHandler(enabled = openEnemy != null) { expandedEnemy = null }
+    PlatformBackHandler(enabled = openEnemy != null) { expandedEnemy = null }
 
     var sheetFor by remember { mutableStateOf<ElementId?>(null) }
     val options = if (vm.queued == 0) engine.options(viewer) else emptyList()
@@ -576,20 +558,7 @@ private fun ResultOverlay(vm: AppViewModel, result: GameResult) {
     val state = vm.session?.engine?.state ?: return
     Box(Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(enabled = false) {}, contentAlignment = Alignment.Center) {
         if (result is GameResult.Winner) {
-            KonfettiView(
-                modifier = Modifier.fillMaxSize(),
-                parties = listOf(
-                    Party(
-                        speed = 0f,
-                        maxSpeed = 30f,
-                        damping = 0.9f,
-                        spread = 360,
-                        colors = StonePalette.colors.map { it.toArgb() },
-                        emitter = Emitter(duration = 200, TimeUnit.MILLISECONDS).max(160),
-                        position = Position.Relative(0.5, 0.3),
-                    ),
-                ),
-            )
+            ConfettiBurst(StonePalette.colors, Modifier.fillMaxSize())
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
             Text(

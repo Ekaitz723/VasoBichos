@@ -1,13 +1,12 @@
 package com.vaso.bichos.ui
 
-import android.app.Application
-import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaso.bichos.Platform
 import com.vaso.bichos.engine.board.Direction
 import com.vaso.bichos.engine.board.Pos
 import com.vaso.bichos.engine.content.Content
@@ -56,10 +55,11 @@ class GameSession(
     fun viewer(): PlayerId = me ?: (engine.state.pendingDecision?.player ?: engine.state.turn.current)
 }
 
-class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val prefs = app.getSharedPreferences("vasobichos", Context.MODE_PRIVATE)
+class AppViewModel(platform: Platform) : ViewModel() {
+    private val prefs = platform.prefs
+    val appVersion = platform.version
     private val repo by lazy {
-        RoomRepository().apply {
+        RoomRepository(platform.db).apply {
             val mode = Content.default.mode(BasicMode.ID)
             defaultPicks = (0 until mode.championsPerPlayer).joinToString(",") { "vanilla:$it" }
         }
@@ -67,13 +67,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     var screen by mutableStateOf<Screen>(Screen.Home)
         private set
-    var playerName by mutableStateOf(prefs.getString(KEY_NAME, "").orEmpty())
+    var playerName by mutableStateOf(prefs.get(KEY_NAME).orEmpty())
         private set
-    var lastRoom by mutableStateOf(prefs.getString(KEY_ROOM, null))
+    var lastRoom by mutableStateOf(prefs.get(KEY_ROOM))
         private set
 
     /** Brillo de turno elegido en este móvil; null = el de su asiento. */
-    var aura by mutableStateOf(Aura.decode(prefs.getString(KEY_AURA, null)))
+    var aura by mutableStateOf(Aura.decode(prefs.get(KEY_AURA)))
         private set
     var message by mutableStateOf<String?>(null)
     var working by mutableStateOf(false)
@@ -116,7 +116,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateName(name: String) {
         playerName = name.take(16)
-        prefs.edit().putString(KEY_NAME, playerName).apply()
+        prefs.put(KEY_NAME, playerName)
     }
 
     // ---------- Partida ----------
@@ -226,7 +226,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Se recuerda en el móvil para las próximas salas. */
     fun chooseAura(choice: Aura) {
         aura = choice
-        prefs.edit().putString(KEY_AURA, choice.encode()).apply()
+        prefs.put(KEY_AURA, choice.encode())
         val code = room?.code ?: return
         val me = uid ?: return
         online { repo.setAura(code, me, choice.encode()) }
@@ -283,7 +283,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun enterLobby(code: String) {
         lastRoom = code
-        prefs.edit().putString(KEY_ROOM, code).apply()
+        prefs.put(KEY_ROOM, code)
         screen = Screen.Lobby(code)
         roomJob?.cancel()
         roomJob = viewModelScope.launch {
@@ -388,7 +388,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun forgetRoom() {
         lastRoom = null
-        prefs.edit().remove(KEY_ROOM).apply()
+        prefs.put(KEY_ROOM, null)
     }
 
     private fun online(block: suspend () -> Unit) {

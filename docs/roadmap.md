@@ -11,6 +11,9 @@
 - Bots de prueba (v0.5, temporales).
 - Parte de arriba de la partida rediseñada (v0.6, rama `ui-rivales`): rivales en columnas
   pequeñas que se abren en grande encima, y aura de turno elegible por jugador en la sala.
+- Versión web para jugar desde iPhone (rama `web`): motor y pantallas multiplataforma
+  (`:shared`), Firebase por su SDK de JavaScript, confeti propio y publicación automática en
+  GitHub Pages.
 - Arreglados: cierre al sacudir el tablero (animación fuera de la composición) y cierre al
   reconectar (la sala llegaba a medias).
 

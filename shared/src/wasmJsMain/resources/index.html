@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>VasoBichos</title>
+    <!-- "Añadir a pantalla de inicio" en iPhone: se abre a pantalla completa, sin la barra de Safari. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VasoBichos">
+    <meta name="theme-color" content="#14121F">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" href="icon-192.png">
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: #14121F;
+            color: #EDE7FF;
+            font-family: system-ui, sans-serif;
+            /* Sin zoom ni rebote al tocar: el juego maneja los gestos. */
+            touch-action: none;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+<div id="loading">Cargando…</div>
+<script src="firebase-config.js"></script>
+<!-- Los módulos se ejecutan en orden: primero Firebase, luego el juego. -->
+<script type="module" src="firebase-bridge.js"></script>
+<script type="module">
+    import "./vasobichos.js";
+    document.getElementById("loading")?.remove();
+</script>
+</body>
+</html>

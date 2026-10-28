@@ -40,7 +40,7 @@
 - **Carta de bicho**: forma y color, nombre, fase (F2), barra de vida, barra de carga en
   segmentos (uno por punto de coste) y KO si está muerto. Al tocarla se abre un panel inferior con
   su ficha y sus ACCIONES en estilo RPG ("▶ Nombre" y una descripción; en gris si no se pueden usar).
-- **Resultado**: capa oscura, "¡Gana X!" o "Empate", confeti (Konfetti) y volver al inicio.
+- **Resultado**: capa oscura, "¡Gana X!" o "Empate", confeti y volver al inicio.
 
 ## Controles
 
@@ -79,7 +79,8 @@ habilidades. Pequeña y corta.
 **Vibración**: tic al seleccionar o intercambiar, toque al recoger y fuerte en golpes grandes,
 habilidades y KO.
 
-Confeti con Konfetti (`nl.dionsegijn:konfetti-compose`).
+Confeti propio (`Confetti.kt`), hecho en Compose para que funcione igual en Android y en la web.
+En la web de iPhone no hay vibración (Safari no la permite); en Chrome de Android sí.
 
 ## Trampas conocidas (ya nos han roto la app)
 

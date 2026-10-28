@@ -15,8 +15,8 @@ kotlin {
     }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
-        nodejs()  // para correr los tests del motor también en Wasm
+        // Basta con Node para correr los tests del motor en Wasm; la web la empaqueta :shared.
+        nodejs()
     }
 
     sourceSets {

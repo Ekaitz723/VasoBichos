@@ -14,8 +14,9 @@ android {
         applicationId = "com.vaso.bichos"
         minSdk = 27
         targetSdk = 37
-        versionCode = 6
-        versionName = "0.6"
+        // Se cambian en gradle.properties (la web usa la misma versión).
+        versionCode = providers.gradleProperty("vasobichos.versionCode").get().toInt()
+        versionName = providers.gradleProperty("vasobichos.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,13 +39,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":engine"))
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.database)
-    implementation(libs.kotlinx.coroutines.play.services)
+    // Todo el juego (pantallas, red, motor) está en :shared; aquí solo queda arrancarlo en Android.
+    implementation(project(":shared"))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.konfetti.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

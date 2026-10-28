@@ -6,7 +6,20 @@
   Contiene todas las reglas y el contenido (bichos, tableros). Todo va en `commonMain`: nada de
   `java.*` ni APIs de una sola plataforma. Tests con `kotlin.test` en `engine/src/commonTest`,
   que corren en JVM y en Wasm (así se comprueba que la partida sale igual en los dos).
-- **`:app`**: Android + Compose. Pantallas, animación y red (Firebase). Depende de `:engine`.
+- **`:shared`**: Kotlin Multiplatform + Compose Multiplatform (Android y web/Wasm). Pantallas,
+  animación y red. Casi todo está en `commonMain`; lo que solo existe en una plataforma va en
+  `androidMain` / `wasmJsMain` (con `expect`/`actual` o detrás de una interfaz):
+  - `Platform`: lo que pone cada plataforma (base de datos, ajustes guardados, versión).
+  - `RealtimeDb`: lo mínimo de Firebase que usan las salas. Android usa el SDK nativo
+    (`FirebaseRealtimeDb`); la web, el SDK de JavaScript a través de `firebase-bridge.js`
+    (`JsRealtimeDb`). `RoomRepository` es común y solo habla con `RealtimeDb`.
+  - `PlatformUi.kt`: vibración (`rememberHaptics`) y botón atrás (`PlatformBackHandler`).
+  - La web arranca en `wasmJsMain/.../Main.kt`; su HTML, iconos y configuración de Firebase están
+    en `wasmJsMain/resources`.
+- **`:app`**: solo `MainActivity`, que arranca `App()` de `:shared` en Android.
+- No uses librerías solo de Android en `commonMain` (por eso el confeti es propio, `Confetti.kt`).
+- La versión (`vasobichos.versionName`/`versionCode`) está en `gradle.properties`; el código común
+  la ve como `APP_VERSION`.
 
 ```
 engine/src/commonMain/kotlin/com/vaso/bichos/engine/
@@ -16,10 +29,15 @@ engine/src/commonMain/kotlin/com/vaso/bichos/engine/
   champion/   Champion (clase base mínima), ChampionDefinition
   content/    Content (catálogo) + un paquete por bicho o tablero
               vanilla/Vanilla.kt, basic/BasicMode.kt
-app/src/main/java/com/vaso/bichos/
-  net/        RoomRepository (Firebase), CommandCodec
-  ui/         AppViewModel (+ GameSession), HomeScreen, LobbyScreen, theme/
-  ui/game/    GameScreen, BoardView, GameDisplay (director de animaciones), TileGlyph
+shared/src/commonMain/kotlin/com/vaso/bichos/
+  Platform.kt KeyValueStore
+  net/        RoomRepository, RealtimeDb, CommandCodec
+  ui/         App, AppViewModel (+ GameSession), HomeScreen, LobbyScreen, theme/
+  ui/game/    GameScreen, BoardView, GameDisplay (director de animaciones), TileGlyph, Aura,
+              Confetti, PlatformUi (expect)
+shared/src/androidMain/   AndroidPlatform, FirebaseRealtimeDb, PlatformUi.android
+shared/src/wasmJsMain/    Main (WebPlatform), JsRealtimeDb, PlatformUi.wasmJs, resources/
+app/src/main/java/com/vaso/bichos/MainActivity.kt
 ```
 
 ## Conceptos del motor

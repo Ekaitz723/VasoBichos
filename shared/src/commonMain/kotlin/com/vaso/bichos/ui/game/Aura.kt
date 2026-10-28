@@ -16,10 +16,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.SweepGradientShader
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -117,8 +116,18 @@ fun Modifier.turnAura(aura: Aura?, corner: Dp): Modifier = if (aura == null) thi
     }
 }
 
+/**
+ * Degradado circular girado [degrees] grados. En vez de rotar el shader (no se puede igual en todas
+ * las plataformas), se recalculan los colores en 48 puntos del círculo ya desplazados.
+ */
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.spinning(colors: List<Color>, degrees: Float): Brush {
-    val shader = SweepGradientShader(center, colors)
-    shader.setLocalMatrix(android.graphics.Matrix().apply { setRotate(degrees, center.x, center.y) })
-    return ShaderBrush(shader)
+    val steps = 48
+    val shift = ((degrees / 360f) % 1f + 1f) % 1f
+    val rotated = List(steps + 1) { i ->
+        val t = ((i.toFloat() / steps - shift) % 1f + 1f) % 1f
+        val pos = t * (colors.size - 1)
+        val k = pos.toInt().coerceAtMost(colors.size - 2)
+        lerp(colors[k], colors[k + 1], pos - k)
+    }
+    return Brush.sweepGradient(rotated, center)
 }

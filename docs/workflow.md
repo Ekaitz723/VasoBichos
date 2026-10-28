@@ -13,8 +13,9 @@
 
 ## Versiones y APK
 
-- Cada vez que le pases un APK al usuario, sube `versionCode` y `versionName` en
-  `app/build.gradle.kts` (0.5 → 0.6...). La versión se ve en la pantalla de inicio.
+- Cada vez que le pases un APK al usuario, sube `vasobichos.versionName` y
+  `vasobichos.versionCode` en `gradle.properties` (0.5 → 0.6...). Es la misma para Android y la
+  web, y se ve en la pantalla de inicio (en la web con "web" detrás).
 - `./gradlew :app:assembleDebug`, copia `app/build/outputs/apk/debug/app-debug.apk` al scratchpad
   como `VasoBichos-vX.Y.apk` y envíalo con SendUserFile.
 - Recuérdale que lo instale **en todos los móviles**: si tienen versiones distintas, las partidas
@@ -58,3 +59,22 @@
   3. Mover: `PUT /rooms/<CÓDIGO>/commands/00000N.json?auth=<idToken>` con `"s|1|0,4|1,4"`.
 - **Borra siempre las salas de prueba** al terminar (`DELETE /rooms/<CÓDIGO>.json`). Nunca toques
   salas que no hayas creado tú: pueden ser partidas del usuario.
+
+## Web (iPhone)
+
+- Se juega en el navegador: https://ekaitz723.github.io/VasoBichos/. En iPhone, Safari →
+  Compartir → "Añadir a pantalla de inicio" la deja como una app a pantalla completa.
+- Compilar: `./gradlew :shared:wasmJsBrowserDistribution` → `shared/build/dist/wasmJs/productionExecutable`.
+- Se publica sola: `.github/workflows/web.yml` la compila y la sube a GitHub Pages en cada push a
+  `main`. Una versión de la web se ve al momento; no hay que pasar nada al usuario.
+- Probarla en local: servir esa carpeta con un servidor que dé `text/javascript` a los `.js` y
+  `application/wasm` a los `.wasm` (el `http.server` de Python en Windows da `text/plain` a los
+  `.js` y la página no carga).
+- Sin la extensión de Chrome se puede manejar un Chrome headless con `--remote-debugging-port` y
+  un script de Node (CDP) que haga clics y capturas. Trucos: Chrome headless tiene unos 500 px de
+  ancho mínimo (emula 412 con `Emulation.setDeviceMetricsOverride`); el primer clic de cada
+  conexión se pierde (haz uno de relleno fuera del tablero); al reconectar se reemplaza el tamaño
+  y el scroll salta, así que haz scroll y clic en la misma conexión. El Node del PATH es viejo;
+  usa el que baja Gradle en `~/.gradle/nodejs/`.
+- Kotlin va en 2.4.x porque Compose Multiplatform para web lo exige; si subes Compose, puede que
+  haya que subir Kotlin.

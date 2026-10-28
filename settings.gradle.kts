@@ -27,4 +27,5 @@ dependencyResolutionManagement {
 rootProject.name = "VasoBichos"
 include(":app")
 include(":engine")
+include(":shared")
  

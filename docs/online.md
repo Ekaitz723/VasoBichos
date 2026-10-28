@@ -4,6 +4,11 @@
   `https://vasobichos-default-rtdb.europe-west1.firebasedatabase.app`.
 - Inicio de sesión **anónimo**. El uid se conserva entre reinicios de la app.
 - `app/google-services.json` **no está en git** (`.gitignore`).
+- La web usa la misma base de datos y la misma clave, en
+  `shared/src/wasmJsMain/resources/firebase-config.js`. Esa sí está en git: en una web siempre es
+  pública. Lo que protege los datos son las reglas.
+- La web habla con Firebase con su SDK de JavaScript (`firebase-bridge.js`, cargado desde
+  gstatic). Android y web juegan en las mismas salas.
 - Reglas de la base de datos: exigen estar identificado (`auth != null`).
 - Gratis (plan Spark) de sobra: una partida ocupa unos KB y se borra al terminar.
 
