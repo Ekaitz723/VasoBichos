@@ -25,6 +25,9 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
+      # El yarn.lock generado en Windows no coincide con el de Linux; aquí solo se compila, así que se rehace.
+      - name: Rehacer yarn.lock
+        run: ./gradlew kotlinWasmUpgradeYarnLock
       - name: Tests del motor
         run: ./gradlew :engine:allTests
       - name: Compilar la web
